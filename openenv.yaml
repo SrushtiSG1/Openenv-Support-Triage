@@ -1,0 +1,14 @@
+name: customer_support_env
+description: Real-world customer support triage simulation
+version: 1.0
+
+observation_space: Observation
+action_space: Action
+reward_space: Reward
+
+entrypoint: app.env:CustomerSupportEnv
+
+tasks:
+  - easy
+  - medium
+  - hard
