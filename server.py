@@ -12,3 +12,15 @@ def home():
 def reset():
     obs = env.reset(0)
     return obs.dict()
+
+from app.models import Action
+
+@app.post("/step")
+def step(action: Action):
+    obs, reward, done, info = env.step(action)
+    return {
+        "observation": obs.dict(),
+        "reward": reward.dict(),
+        "done": done,
+        "info": info
+    }
