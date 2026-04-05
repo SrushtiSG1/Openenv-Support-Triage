@@ -1,0 +1,13 @@
+[project]
+name = "openenv-support-triage"
+version = "0.1.0"
+description = "OpenEnv Customer Support Triage Environment"
+authors = [
+  { name="Srushti", email="sgsrusti@gmail.com" }
+]
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "requests"
+]
