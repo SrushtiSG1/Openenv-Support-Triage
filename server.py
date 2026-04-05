@@ -8,7 +8,7 @@ env = CustomerSupportEnv()
 def home():
     return {"status": "ok"}
 
-@app.get("/reset")
+@app.post("/reset")
 def reset():
     obs = env.reset(0)
     return obs.dict()
