@@ -1,97 +1,51 @@
-import requests
+import os
+from openai import OpenAI
 from app.env import CustomerSupportEnv
 from app.models import Action
 
-# 🔑 PUT YOUR HUGGING FACE TOKEN HERE
-HF_TOKEN = "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"
+client = OpenAI(
+    api_key=os.environ["API_KEY"],
+    base_url=os.environ["API_BASE_URL"]
+)
 
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+MODEL = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 
 env = CustomerSupportEnv()
-
-
-def query(prompt):
-    try:
-        response = requests.post(
-            API_URL,
-            headers=HEADERS,
-            json={"inputs": prompt},
-            timeout=30
-        )
-        return response.json()
-    except Exception as e:
-        print("API Error:", e)
-        return None
-
-
-def create_action(obs, model_output):
-    text = obs.message.lower()
-
-    # Simple mapping logic (important for scoring)
-    if "refund" in text:
-        return Action(
-            action_type="classify",
-            category="billing",
-            priority="medium",
-            route_to="billing_team",
-            response=model_output[:50]
-        )
-
-    elif "crash" in text:
-        return Action(
-            action_type="classify",
-            category="technical",
-            priority="high",
-            route_to="engineering",
-            response=model_output[:50]
-        )
-
-    else:
-        return Action(
-            action_type="classify",
-            category="multi_issue",
-            priority="critical",
-            route_to="priority_support",
-            response=model_output[:50]
-        )
 
 
 def run_task(task_id):
     obs = env.reset(task_id)
 
     print(f"[START] Task {task_id}")
-
     total_score = 0
 
     for step in range(5):
 
         prompt = f"""
-You are a helpful customer support agent.
+You are a support agent.
 
 Ticket: {obs.message}
 Customer tier: {obs.customer_tier}
-
-Write a short helpful response.
 """
 
-        result = query(prompt)
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}]
+        )
 
-        if result and isinstance(result, list):
-            try:
-                model_output = result[0].get("generated_text", "We will help you.")
-            except:
-                model_output = "We will help you."
-        else:
-            model_output = "We will help you."
+        text = response.choices[0].message.content
 
-        action = create_action(obs, model_output)
+        action = Action(
+            action_type="classify",
+            category="billing" if "refund" in obs.message.lower() else "technical",
+            priority="high",
+            route_to="engineering",
+            response=text[:50]
+        )
 
         obs, reward, done, info = env.step(action)
 
-        print(f"[STEP] {step} | Score: {reward.score} | Info: {info}")
+        print(f"[STEP] {step} | Score: {reward.score}")
 
         total_score += reward.score
 
@@ -104,9 +58,7 @@ Write a short helpful response.
 
 if __name__ == "__main__":
     scores = []
-
     for i in range(3):
         scores.append(run_task(i))
 
-    final_score = sum(scores) / len(scores)
-    print(f"FINAL SCORE: {final_score}")
+    print("FINAL SCORE:", sum(scores)/len(scores))
