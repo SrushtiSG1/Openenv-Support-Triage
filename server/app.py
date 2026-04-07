@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI # type: ignore
 from app.env import CustomerSupportEnv
 
 app = FastAPI()
@@ -17,5 +17,5 @@ def reset():
 def main():
     return app
 if __name__ == "__main__":
-        import uvicorn
+        import uvicorn # type: ignore
         uvicorn.run("server.app:app", host="0.0.0.0", port=7860)
